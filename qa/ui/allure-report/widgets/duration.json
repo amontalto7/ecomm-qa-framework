@@ -1,0 +1,1 @@
+[{"uid":"aeb0253dfbaacfda","name":"checkout shows error when cart is empty","time":{"start":1754769423780,"stop":1754769424061,"duration":281},"status":"passed","severity":"normal"},{"uid":"ef62043314606ea0","name":"happy path checkout","time":{"start":1754769422804,"stop":1754769423682,"duration":878},"status":"passed","severity":"normal"}]

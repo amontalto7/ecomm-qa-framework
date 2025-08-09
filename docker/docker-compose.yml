@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  shop-api:
+    build: ../shop-api
+    ports: ["3001:3001"]
+    environment:
+      PAYMENT_URL: http://wiremock:8080/payment
+      SHIPPING_URL: http://wiremock:8080/shipping
+    depends_on: [wiremock]
+
+  shop-web:
+    build: ../shop-web
+    ports: ["3000:80"]
+    environment:
+      API_URL: http://shop-api:3001
+    depends_on: [shop-api]
+
+  wiremock:
+    image: wiremock/wiremock:3.6.0
+    ports: ["8080:8080"]
+    volumes:
+      - ./wiremock:/home/wiremock

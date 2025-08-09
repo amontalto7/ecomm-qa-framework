@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/shipping"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "status": "CREATED",
+      "tracking": "TRACK123"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

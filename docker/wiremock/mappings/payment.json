@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/payment"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "status": "APPROVED",
+      "auth": "AUTH123"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

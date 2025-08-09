@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Demo Store</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system; max-width: 920px; margin: 40px auto; padding: 0 16px; }
+      header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; }
+      .pill { background:#f5f5f5; border:1px solid #e5e5e5; padding:6px 10px; border-radius:999px; }
+      button { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; background:white; }
+      button.primary { background:#111; color:white; border-color:#111; }
+      .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:12px; }
+      .card { border:1px solid #eee; border-radius:12px; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+      .row { display:flex; gap:8px; align-items:center; }
+      .cart { border-top:1px dashed #ddd; margin-top:20px; padding-top:12px; }
+      .muted { color:#666; }
+      .ok { color: #067d3f; font-weight: 600; }
+      .err { color: #b00020; font-weight: 600; }
+      .total { font-weight:700; font-size: 1.1rem; }
+      #status { margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Demo Store</h1>
+      <div class="row">
+        <button id="load">Load Products</button>
+        <span class="pill">Cart: <span id="count">0</span></span>
+        <button id="view">View Cart</button>
+        <button id="clear">Clear Cart</button>
+        <button id="checkout" class="primary">Checkout</button>
+      </div>
+    </header>
+
+    <section>
+      <div id="products" class="grid"></div>
+      <div id="cart" class="cart"></div>
+      <div id="status" class="muted"></div>
+    </section>
+
+    <script>
+      var API = "http://localhost:3001";
+
+      function $(sel){ return document.querySelector(sel); }
+      function setStatus(text, cls){ var s = $('#status'); s.className = cls || ''; s.textContent = text; }
+
+      function fetchJSON(url, opts){
+        return fetch(url, opts || {}).then(function(res){
+          return res.text().then(function(t){
+            var j; try { j = t ? JSON.parse(t) : {}; } catch(e){ j = { raw: t }; }
+            return { ok: res.ok, status: res.status, json: j };
+          });
+        });
+      }
+
+      function loadProducts(){
+        setStatus('Loading products…');
+        fetchJSON(API + '/products').then(function(r){
+          if(!r.ok){ setStatus('Failed to load products', 'err'); return; }
+          var grid = $('#products'); grid.innerHTML = '';
+          r.json.forEach(function(p){
+            var card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML =
+              '<div class="row" style="justify-content:space-between">' +
+                '<div><div><strong>'+p.name+'</strong></div><div class="muted">'+p.sku+'</div></div>' +
+                '<div>$'+p.price+'</div>' +
+              '</div>' +
+              '<div class="row" style="margin-top:8px">' +
+                '<input type="number" min="1" value="1" style="width:64px" />' +
+                '<button>Add</button>' +
+              '</div>';
+            var qtyInput = card.querySelector('input');
+            card.querySelector('button').onclick = function(){
+              var qty = Math.max(1, parseInt(qtyInput.value || '1', 10));
+              fetchJSON(API + '/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sku: p.sku, qty: qty })
+              }).then(function(r2){
+                if(r2.ok){ setStatus('Added to cart', 'ok'); updateCount(r2.json.cart.length); }
+                else { setStatus('Add failed: ' + (r2.json && r2.json.error ? r2.json.error : r2.status), 'err'); }
+              });
+            };
+            grid.appendChild(card);
+          });
+          setStatus('Products loaded', 'ok');
+        });
+      }
+
+      function renderCart(items){
+        var c = $('#cart');
+        if(!items || !items.length){
+          c.innerHTML = '<p class="muted">Cart is empty.</p>';
+          updateCount(0); return;
+        }
+        var total = 0;
+        var html = '<h3>Your Cart</h3>';
+        items.forEach(function(it){
+          total += it.price * it.qty;
+          html += '<div class="row"><div>'+it.name+' x '+it.qty+'</div><div>$'+(it.price*it.qty).toFixed(2)+'</div></div>';
+        });
+        html += '<div class="row total" style="justify-content:space-between; margin-top:8px"><div>Total</div><div>$'+total.toFixed(2)+'</div></div>';
+        c.innerHTML = html;
+        updateCount(items.length);
+      }
+
+      function loadCart(){
+        fetchJSON(API + '/cart').then(function(r){
+          if(!r.ok){ setStatus('Failed to load cart', 'err'); return; }
+          renderCart(r.json);
+        });
+      }
+
+      function updateCount(n){ $('#count').textContent = n; }
+
+      function checkout(){
+        setStatus('Processing checkout…');
+        fetchJSON(API + '/checkout', { method: 'POST' }).then(function(r){
+          if(!r.ok){
+            var msg = (r.json && r.json.error === 'empty_cart') ? 'Cart is empty' : 'Checkout failed';
+            setStatus(msg, 'err'); return;
+          }
+          renderCart([]);
+          var tracking = (r.json && r.json.shipping && r.json.shipping.tracking) ? r.json.shipping.tracking : '-';
+          setStatus('Order '+r.json.status+'. Total $ '+r.json.total+'. Tracking: '+tracking, 'ok');
+        });
+      }
+
+      function clearCart(){
+        fetchJSON(API + '/cart/clear', { method: 'POST' }).then(function(){ renderCart([]); setStatus('Cart cleared', 'ok'); });
+      }
+
+      // Wire up buttons
+      document.getElementById('load').onclick = loadProducts;
+      document.getElementById('view').onclick = loadCart;
+      document.getElementById('checkout').onclick = checkout;
+      document.getElementById('clear').onclick = clearCart;
+
+      // Initial load
+      loadProducts(); loadCart();
+    </script>
+  </body>
+</html>
