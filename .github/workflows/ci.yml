@@ -11,18 +11,12 @@ permissions:
   id-token: write
 
 jobs:
-  spin_up:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Compose up
-        run: docker compose -f docker/docker-compose.yml up -d --build
-
   ui:
-    needs: spin_up
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Compose up (web, api, stubs)
+        run: docker compose -f docker/docker-compose.yml up -d --build
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -42,12 +36,16 @@ jobs:
         with:
           name: allure-ui-results
           path: qa/ui/allure-results/**
+      - name: Compose down
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down
 
   api:
-    needs: spin_up
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Compose up (web, api, stubs)
+        run: docker compose -f docker/docker-compose.yml up -d --build
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -64,6 +62,9 @@ jobs:
         with:
           name: allure-api-results
           path: qa/api/target/allure-results/**
+      - name: Compose down
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down
 
   publish-allure:
     if: github.ref == 'refs/heads/main'
@@ -71,33 +72,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download Allure results (UI)
-        uses: actions/download-artifact@v4
-        with:
-          name: allure-ui-results
-          path: ./allure-ui-results
-
-      - name: Download Allure results (API)
-        uses: actions/download-artifact@v4
-        with:
-          name: allure-api-results
-          path: ./allure-api-results
-
+      - uses: actions/download-artifact@v4
+        with: { name: allure-ui-results, path: ./allure-ui-results }
+      - uses: actions/download-artifact@v4
+        with: { name: allure-api-results, path: ./allure-api-results }
       - name: Install Allure CLI
         run: npm i -g allure-commandline --location=global
-
       - name: Build merged Allure site
         run: |
           mkdir -p merged-results
           cp -r allure-ui-results/* merged-results/ || true
           cp -r allure-api-results/* merged-results/ || true
           allure generate merged-results -o site --clean
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+      - uses: actions/deploy-pages@v4
