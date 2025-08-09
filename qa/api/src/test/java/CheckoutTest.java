@@ -61,7 +61,7 @@ public class CheckoutTest {
     }
 
     @Story("Checkout validation")
-    @Severity(SeverityLevel.MAJOR)
+    @Severity(SeverityLevel.CRITICAL)
     @Test
     public void checkout_empty_cart_returns_400() {
         // Ensure cart is empty
