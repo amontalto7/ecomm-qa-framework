@@ -52,6 +52,9 @@ jobs:
           java-version: '21'
       - name: Test (RestAssured + TestNG)
         run: mvn -f qa/api/pom.xml -q test
+      - name: Debug list target
+        if: always()
+        run: ls -la qa/api/target || true && ls -la qa/api/target/allure-results || true
       - name: Upload surefire reports
         uses: actions/upload-artifact@v4
         with:

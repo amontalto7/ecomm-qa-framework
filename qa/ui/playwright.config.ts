@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './tests',
   reporter: [
     ['line'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['allure-playwright', { outputFolder: 'allure-results' }]
   ],
   use: {

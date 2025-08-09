@@ -1,13 +1,16 @@
 import io.qameta.allure.*;               // NEW
-import io.restassured.filter.log.LogDetail;
 import io.qameta.allure.restassured.AllureRestAssured;
+import io.qameta.allure.testng.AllureTestNg;
 
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @Epic("E‑Commerce")
 @Feature("Checkout")
+@Listeners({ AllureTestNg.class })
+
 public class CheckoutTest {
     private static final String BASE = System.getenv().getOrDefault("BASE_URL", "http://localhost:3001");
 
