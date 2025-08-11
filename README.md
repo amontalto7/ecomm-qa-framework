@@ -29,6 +29,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 # 2) Run UI tests (Playwright)
 cd qa/ui
+npm install
 npm ci
 npx playwright install --with-deps
 npx playwright test
